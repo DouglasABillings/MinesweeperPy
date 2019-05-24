@@ -1,3 +1,6 @@
+import copy
+
+
 def create_cell(visible=False, flagged=False, value='0'):
     """ Returns a cell
     :param visible: Whether the cell is visible or not
@@ -55,167 +58,52 @@ def board_to_string(board):
     :param board:
     :return: A String representing the given board
     """
-    board_string = ""
+    result = ""
     for y in range(len(board)):
         row_string = ""
         for x in range(len(board[0])):
             row_string += cell_to_char(board[y][x])
-        board_string += row_string
+        result += row_string
         if y in range(len(board) - 1):
-            board_string += '\n'
-    return board_string
+            result += '\n'
+    return result
 
 
-if __name__ == '__main__':
-    def test_create_cell():
-        # Can create a default cell
-        assert create_cell() == {"visible": False, "flagged": False, "value": '0'}
-        # Can create a visible cell
-        assert create_cell(visible=True) == {"visible": True, "flagged": False, "value": '0'}
-        # Can create a flagged cell
-        assert create_cell(flagged=True) == {"visible": False, "flagged": True, "value": '0'}
-        # Can create a hidden cell with a value
-        assert create_cell(value='1') == {"visible": False, "flagged": False, "value": '1'}
-        assert create_cell(value='X') == {"visible": False, "flagged": False, "value": 'X'}
-        # Can create a visible cell with a value
-        assert create_cell(value='1', visible=True) == {"visible": True, "flagged": False, "value": '1'}
-        assert create_cell(value='X', visible=True) == {"visible": True, "flagged": False, "value": 'X'}
-        # Can create a flagged cell with a value
-        assert create_cell(value='1', flagged=True) == {"visible": False, "flagged": True, "value": '1'}
-        assert create_cell(value='X', flagged=True) == {"visible": False, "flagged": True, "value": 'X'}
-        # The function is pure
-        a_cell = create_cell()
-        a_cell["value"] = "LOL"
-        another_cell = create_cell()
-        assert another_cell == {"visible": False, "flagged": False, "value": '0'}
-        assert a_cell == {"visible": False, "flagged": False, "value": "LOL"}
-    # Can create a cell
-    test_create_cell()
+def place_bombs_on_board(board, bomb_set):
+    """ Generates a board with bombs placed
+    :param board:
+    :param bomb_set:
+    :return: a new board
+    """
+    result = copy.deepcopy(board)
+    for y in range(len(board)):
+        for x in range(len(board[0])):
+            if (x, y) in bomb_set:
+                result[y][x]["value"] = 'X'
+    return result
 
-    def test_create_board():
-        board = create_board(width=3, height=2)
-        default_board = [
-            [
-                {"visible": False, "flagged": False, "value": '0'},
-                {"visible": False, "flagged": False, "value": '0'},
-                {"visible": False, "flagged": False, "value": '0'}
-            ],
-            [
-                {"visible": False, "flagged": False, "value": '0'},
-                {"visible": False, "flagged": False, "value": '0'},
-                {"visible": False, "flagged": False, "value": '0'}
-            ]
-        ]
-        modified_board = [
-            [
-                {"visible": False, "flagged": False, "value": '0'},
-                {"visible": False, "flagged": False, "value": 'X'},
-                {"visible": False, "flagged": False, "value": '0'}
-            ],
-            [
-                {"visible": False, "flagged": False, "value": '0'},
-                {"visible": False, "flagged": False, "value": '0'},
-                {"visible": False, "flagged": False, "value": '0'}
-            ]
-        ]
-        # Can create a new board
-        assert board == default_board
-        # The function is pure
-        board[0][1]["value"] = 'X'
-        assert board == modified_board
-        assert create_board(1, 1) == [[{"visible": False, "flagged": False, "value": '0'}]]
-    # Can create a board
-    test_create_board()
 
-    def test_create_game():
-        game1 = {
-            "board_width": 3,
-            "board_height": 2,
-            "num_bombs": 10,
-            "game_over": False,
-            "board": [
-                [
-                    {"visible": False, "flagged": False, "value": '0'},
-                    {"visible": False, "flagged": False, "value": '0'},
-                    {"visible": False, "flagged": False, "value": '0'}
-                ],
-                [
-                    {"visible": False, "flagged": False, "value": '0'},
-                    {"visible": False, "flagged": False, "value": '0'},
-                    {"visible": False, "flagged": False, "value": '0'}
-                ]
-            ]
-        }
-        game2 = {
-            "board_width": 2,
-            "board_height": 1,
-            "num_bombs": 3,
-            "game_over": False,
-            "board": [
-                [
-                    {"visible": False, "flagged": False, "value": '0'},
-                    {"visible": False, "flagged": False, "value": '0'}
-                ]
-            ]
-        }
-        # Can create a new game
-        assert create_game(board_width=3, board_height=2, num_bombs=10) == game1
-        assert create_game(board_width=2, board_height=1, num_bombs=3) == game2
-    # Can create a game
-    test_create_game()
+def place_nums_on_board(board):
+    """ Generates a board with numbers placed
+    :param board: 2D array of dictionaries
+    :return: Returns a board with numbers
+    """
+    result = copy.deepcopy(board)
+    direction = [(-1, -1), (-1, 0), (-1, 1),
+                 (0, -1), (0, 1),
+                 (1, -1), (1, 0), (1, 1)]
+    for y in range(len(result)):
+        for x in range(len(result[0])):
+            if result[y][x]["value"] == 'X':
+                continue
+            for (delta_x, delta_y) in direction:
+                new_y = y + delta_y
+                new_x = x + delta_x
+                in_bounds = 0 <= new_y < len(result) and 0 <= new_x < len(result[0])
+                if in_bounds and result[new_y][new_x]["value"] == 'X':
+                    result[y][x]["value"] = chr(ord(result[y][x]["value"]) + 1)
+    return result
 
-    def test_cell_to_char():
-        # Can convert a hidden cell to a char correctly
-        assert cell_to_char(create_cell()) == '#'
-        assert cell_to_char(create_cell(value='X')) == '#'
-        assert cell_to_char(create_cell(value='1')) == '#'
 
-        # Can convert a flagged cell to a char correctly
-        assert cell_to_char(create_cell(flagged=True)) == 'F'
-        assert cell_to_char(create_cell(value='X', flagged=True)) == 'F'
-        assert cell_to_char(create_cell(value='3', flagged=True)) == 'F'
-
-        # Can convert a visible cell to a char correctly
-        assert cell_to_char(create_cell(visible=True)) == '0'
-        assert cell_to_char(create_cell(visible=True, flagged=True)) == '0'
-        assert cell_to_char(create_cell(visible=True, value='X')) == 'X'
-        assert cell_to_char(create_cell(visible=True, value='1')) == '1'
-        assert cell_to_char(create_cell(visible=True, value='2')) == '2'
-        assert cell_to_char(create_cell(visible=True, value='3')) == '3'
-    # Can convert a cell to a char
-    test_cell_to_char()
-
-    def test_board_to_string():
-        test_board = [
-            [
-                {"visible": True, "flagged": False, "value": '0'},
-                {"visible": True, "flagged": False, "value": '0'},
-                {"visible": True, "flagged": False, "value": '1'},
-                {"visible": False, "flagged": True, "value": 'X'},
-                {"visible": True, "flagged": False, "value": '1'}
-            ],
-            [
-                {"visible": True, "flagged": False, "value": '1'},
-                {"visible": True, "flagged": False, "value": '1'},
-                {"visible": True, "flagged": False, "value": '1'},
-                {"visible": True, "flagged": False, "value": '1'},
-                {"visible": True, "flagged": False, "value": '1'}
-            ],
-            [
-                {"visible": True, "flagged": False, "value": 'X'},
-                {"visible": True, "flagged": False, "value": '1'},
-                {"visible": True, "flagged": False, "value": '0'},
-                {"visible": True, "flagged": False, "value": '0'},
-                {"visible": True, "flagged": False, "value": '0'}
-            ]
-        ]
-
-        # Can convert a board to a string correctly
-        assert board_to_string(create_board(5, 5)) == "#####\n#####\n#####\n#####\n#####"
-        assert board_to_string(create_board(3, 2)) == "###\n###"
-        assert board_to_string(create_board(5, 2)) == "#####\n#####"
-        assert board_to_string(test_board) == "001F1\n11111\nX1000"
-    # Can convert a board to a string
-    test_board_to_string()
-
-    print("All tests passed!")
+def get_next_board():
+    pass
