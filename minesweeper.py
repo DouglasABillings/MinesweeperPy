@@ -105,5 +105,31 @@ def place_nums_on_board(board):
     return result
 
 
-def get_next_board():
-    pass
+def get_next_board(board, action, coord):
+    """ Generates the next state of board with an action taken
+    :param board: 2D Array of Dictionaries
+    :param action: Reveal or Flag (Left or Right Click)
+    :param coord: A tuple where the action is being taken place
+    :return: A new board
+    """
+    result = copy.deepcopy(board)
+    (x, y) = coord
+    in_bounds = 0 <= y < len(result) and 0 <= x < len(result[0])
+    if not in_bounds:
+        return result
+
+    cell = result[y][x]
+    directions = [(-1, -1), (-1, 0), (-1, 1),
+                  (0, -1), (0, 1),
+                  (1, -1), (1, 0), (1, 1)]
+
+    if action == "LEFT_CLICK":
+        if not cell["visible"] and not cell["flagged"]:
+            cell["visible"] = True
+            if cell["value"] == '0':
+                for (delta_x, delta_y) in directions:
+                    result = get_next_board(result, action, (x + delta_x, y + delta_y))
+    elif action == "RIGHT_CLICK":
+        cell["flagged"] = not cell["flagged"]
+
+    return result

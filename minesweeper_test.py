@@ -209,25 +209,60 @@ def test_get_next_board():
     assert next_board[0][0] == create_cell(flagged=True)
     assert board_to_string(next_board) == "F#####\n######\n######\n###X##\n###1##"
 
+    # Function does not crash and is pure
+    assert next_board == get_next_board(next_board, "LOL", (5, 5))
+    assert next_board == get_next_board(next_board, "LEFT_CLICK", (23, -5))
+    assert board_to_string(next_board) == "F#####\n######\n######\n###X##\n###1##"
+    assert test_board == place_nums_on_board(place_bombs_on_board(create_board(6, 5), bombs))
+
     # Left clicking a hidden 0 cell flood fills in every possible direction recursively
     # until non zero cells are revealed
     next_board = get_next_board(next_board, "LEFT_CLICK", (1, 4))
     assert board_to_string(next_board) == "F00000\n011100\n01#210\n012X10\n001110"
 
-    # Function does not crash and is pure
-    assert next_board == get_next_board(next_board, "LOL", (5, 5))
-    assert next_board == get_next_board(next_board, "LEFT_CLICK", (23, -5))
-    assert board_to_string(next_board) == "F00000\n011100\n01#210\n012X10\n001110"
+
+def test_is_board_over():
+    # 000000
+    # 011100
+    # 01X210
+    # 012X10
+    # 001110
+    bombs = {(2, 2), (3, 3)}
+    test_board = place_nums_on_board(place_bombs_on_board(create_board(6, 5), bombs))
+
+    # Can verify a game is unsolved
+    is_over, is_win = is_board_over(board=test_board)
+    assert not is_over and not is_win
+
+    # Can verify a game is lost when a bomb is click
+    is_over, is_win = is_board_over(get_next_board(test_board, 'LEFT_CLICK', (2, 2)))
+    assert is_over and not is_win
+
+    # Can verify a game is unsolved after a couple moves have been made
+    test_board = get_next_board(get_next_board(test_board, 'LEFT_CLICK', (1, 1)), 'LEFT_CLICK', (3, 4))
+    is_over, is_win = is_board_over(test_board)
+    assert not is_over and not is_win
+
+    # Can verify a game is solved and won after all non bomb cells are made visible
+    test_board = get_next_board(test_board, 'LEFT_CLICK', (0, 0))
+    is_over, is_win = is_board_over(test_board)
+    assert is_over and is_win
+    test_board = get_next_board(test_board, 'RIGHT_CLICK', (2, 2))
+    is_over, is_win = is_board_over(test_board)
+    assert is_over and is_win
+
+    # Function is pure
     assert test_board == place_nums_on_board(place_bombs_on_board(create_board(6, 5), bombs))
 
 
 def test_create_game():
-    bombs = {(0, 0)}
+    bombs1 = {(0, 0)}
     game1 = {
         "board_width": 3,
         "board_height": 2,
-        "bombs": bombs,
+        "bombs": bombs1,
         "game_over": False,
+        "is_win": False,
         "board": [
             [
                 {"visible": False, "flagged": False, "value": 'X'},
@@ -241,11 +276,13 @@ def test_create_game():
             ]
         ]
     }
+    bombs2 = {(1, 0)}
     game2 = {
         "board_width": 2,
         "board_height": 1,
-        "bombs": bombs,
+        "bombs": bombs2,
         "game_over": False,
+        "is_win": False,
         "board": [
             [
                 {"visible": False, "flagged": False, "value": 'X'},
@@ -255,13 +292,58 @@ def test_create_game():
     }
 
     # Can create a new game
-    assert create_game(board_width=3, board_height=2, bomb_set=bombs) == game1
-    assert create_game(board_width=2, board_height=1, bomb_set=bombs) == game2
+    assert create_game(board_width=3, board_height=2, bomb_set=bombs1) == game1
+    assert create_game(2, 1, bombs2) == game2
 
 
 def test_get_next_game():
-    # TODO: test getting the next state of a game
-    pass
+    bombs = {(2, 2), (3, 3)}
+    test_game = create_game(6, 5, bombs)
+
+    # Can advance the game to its next state with a left click
+    next_game = get_next_game(test_game, 'LEFT_CLICK', (3, 4))
+    assert next_game == {
+        "board_width": 6,
+        "board_height": 5,
+        "bombs": bombs,
+        "game_over": False,
+        "is_win": False,
+        "board": get_next_board(test_game["board"], 'LEFT_CLICK', (3, 4))
+    }
+
+    # The game is won when every non bomb cell is revealed
+    next_game2 = get_next_game(next_game, 'LEFT_CLICK', (0, 0))
+    assert next_game2 == {
+        "board_width": 6,
+        "board_height": 5,
+        "bombs": bombs,
+        "game_over": True,
+        "is_win": True,
+        "board": get_next_board(next_game["board"], 'LEFT_CLICK', (0, 0))
+    }
+    next_game3 = get_next_game(next_game2, 'RIGHT_CLICK', (2, 2))
+    assert next_game3 == {
+        "board_width": 6,
+        "board_height": 5,
+        "bombs": bombs,
+        "game_over": True,
+        "is_win": True,
+        "board": get_next_board(next_game2["board"], 'RIGHT_CLICK', (2, 2))
+    }
+
+    # The game is lost when a bomb is revealed
+    next_game4 = get_next_game(next_game3, 'LEFT_CLICK', (3, 3))
+    assert next_game4 == {
+        "board_width": 6,
+        "board_height": 5,
+        "bombs": bombs,
+        "game_over": True,
+        "is_win": False,
+        "board": get_next_board(next_game3["board"], 'LEFT_CLICK', (3, 3))
+    }
+
+    # Function is pure
+    assert test_game == create_game(6, 5, bombs)
 
 
 def run_tests():
@@ -270,8 +352,6 @@ def run_tests():
     test_create_cell()
     # Can create a board
     test_create_board()
-    # Can create a game
-    test_create_game()
 
     # Can convert a cell to a char
     test_cell_to_char()
@@ -285,6 +365,11 @@ def run_tests():
 
     # Can advance the board to its next state
     test_get_next_board()
+    # Check check to see if a board is solved, and if it was a win or loss
+    test_is_board_over()
+
+    # Can create a game
+    test_create_game()
     # Can advance the game to its next state
     test_get_next_game()
 
