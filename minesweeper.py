@@ -26,19 +26,20 @@ def create_board(width, height):
     return result
 
 
-def create_game(board_width, board_height, num_bombs):
+def create_game(board_width, board_height, bomb_set):
     """ Get a new Game data structure
     :param board_width:
     :param board_height:
-    :param num_bombs:
+    :param bomb_set:
     :return: A game Dictionary
     """
     return {
         "board_width": board_width,
         "board_height": board_height,
-        "num_bombs": num_bombs,
+        "bombs": bomb_set,
         "game_over": False,
-        "board": create_board(board_width, board_height)
+        "is_win": False,
+        "board": place_nums_on_board(place_bombs_on_board(create_board(board_width, board_height), bomb_set))
     }
 
 
@@ -132,4 +133,48 @@ def get_next_board(board, action, coord):
     elif action == "RIGHT_CLICK":
         cell["flagged"] = not cell["flagged"]
 
+    return result
+
+
+def is_board_over(board):
+    """ Checks the board to see if the game is over and if it's a win
+    :param board: 2D Array of Dictionaries
+    :return: Tuple of two Booleans
+    """
+    result = copy.deepcopy(board)
+
+    total_cells = len(result) * len(result[0])
+    total_bombs = 0
+    visible_bombs = 0
+    visible_non_bombs = 0
+    for y in range(len(result)):
+        for x in range(len(result[0])):
+            cell = result[y][x]
+            if cell["value"] == 'X':
+                total_bombs += 1
+                if cell["visible"]:
+                    visible_bombs += 1
+            elif cell["visible"]:
+                visible_non_bombs += 1
+
+    if visible_bombs > 0:
+        return True, False
+    elif visible_non_bombs == total_cells - total_bombs:
+        return True, True
+    else:
+        return False, False
+
+
+def get_next_game(game, action, coord):
+    """ Generate and return the next state of game
+    :param game: A game dictionary
+    :param action: An action to perform
+    :param coord: A location to perform the action
+    :return: A new game dictionary
+    """
+    result = copy.deepcopy(game)
+    result["board"] = get_next_board(result["board"], action, coord)
+    is_over, is_win = is_board_over(result["board"])
+    result["game_over"] = is_over
+    result["is_win"] = is_win
     return result

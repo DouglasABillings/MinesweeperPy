@@ -229,13 +229,14 @@ def test_is_board_over():
     # 001110
     bombs = {(2, 2), (3, 3)}
     test_board = place_nums_on_board(place_bombs_on_board(create_board(6, 5), bombs))
+    original_board = place_nums_on_board(place_bombs_on_board(create_board(6, 5), bombs))
 
     # Can verify a game is unsolved
-    is_over, is_win = is_board_over(board=test_board)
+    is_over, is_win = is_board_over(board=original_board)
     assert not is_over and not is_win
 
     # Can verify a game is lost when a bomb is click
-    is_over, is_win = is_board_over(get_next_board(test_board, 'LEFT_CLICK', (2, 2)))
+    is_over, is_win = is_board_over(get_next_board(original_board, 'LEFT_CLICK', (2, 2)))
     assert is_over and not is_win
 
     # Can verify a game is unsolved after a couple moves have been made
@@ -252,7 +253,7 @@ def test_is_board_over():
     assert is_over and is_win
 
     # Function is pure
-    assert test_board == place_nums_on_board(place_bombs_on_board(create_board(6, 5), bombs))
+    assert original_board == place_nums_on_board(place_bombs_on_board(create_board(6, 5), bombs))
 
 
 def test_create_game():
@@ -285,8 +286,8 @@ def test_create_game():
         "is_win": False,
         "board": [
             [
-                {"visible": False, "flagged": False, "value": 'X'},
-                {"visible": False, "flagged": False, "value": '1'}
+                {"visible": False, "flagged": False, "value": '1'},
+                {"visible": False, "flagged": False, "value": 'X'}
             ]
         ]
     }
@@ -310,6 +311,9 @@ def test_get_next_game():
         "is_win": False,
         "board": get_next_board(test_game["board"], 'LEFT_CLICK', (3, 4))
     }
+
+    # Function is pure
+    assert test_game == create_game(6, 5, bombs)
 
     # The game is won when every non bomb cell is revealed
     next_game2 = get_next_game(next_game, 'LEFT_CLICK', (0, 0))
@@ -341,9 +345,6 @@ def test_get_next_game():
         "is_win": False,
         "board": get_next_board(next_game3["board"], 'LEFT_CLICK', (3, 3))
     }
-
-    # Function is pure
-    assert test_game == create_game(6, 5, bombs)
 
 
 def run_tests():
