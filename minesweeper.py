@@ -168,7 +168,7 @@ def is_board_over(board):
 def get_next_game(game, action, coord):
     """ Generate and return the next state of game
     :param game: A game dictionary
-    :param action: An action to perform
+    :param action: An action to perform (either the string "LEFT_CLICK" or "RIGHT_CLICK")
     :param coord: A location to perform the action
     :return: A new game dictionary
     """
