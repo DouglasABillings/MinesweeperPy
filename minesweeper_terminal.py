@@ -48,16 +48,45 @@ def bomb_location():
     return total_bombs
 
 
+def user_move():
+    """Takes in user input for the coord and action
+    :return: returns a String and a Tuple
+    """
+    x, y = 0, 0
+    action = ""
+    while x not in range(1, game["board_width"]):
+        while y not in range(1, game["board_height"]):
+            try:
+                # We have to handle this in a try catch block, because it may throw an exception
+                x, y = map(int, input("Please enter your move in the form of x y\n").split())
+                action = (input("L to reveal or R to flag\n").upper())
+            except ValueError:
+                # Make sure to handle a ValueError exception
+                x, y = 0, 0
+    coord = x, y
+    if action is "L" or "l":
+        return {
+            "action": "LEFT_CLICK",
+            "coord": coord
+        }
+
+    elif action is "R" or "r":
+        return {
+            "action": "RIGHT_CLICK",
+            "coord": coord
+        }
+
+
 if __name__ == '__main__':
-    # TODO: Create game using the appropriate width and height, and the bomb locations
     version = difficulty()
     bomb_set = bomb_location()
     game = create_game(version["board_width"], version["board_height"], bomb_set)
 
-    # TODO: get a move from the player (an action and a coordinate)
-    # TODO: update the game state one move
-    # TODO: print the game's board
-    # TODO: repeat until the game ends
-    print(board_to_string(game["board"]))
-    game = get_next_game(game, "LEFT_CLICK", (5, 2))
-
+    while not game["game_over"]:
+        print(board_to_string(game["board"]))
+        move = user_move()
+        game = get_next_game(game, move["action"], move["coord"])
+    if game["game_over"] and not game["is_win"]:
+        print("You hit a bomb, try again!")
+    if game["game_over"] and game["is_win"]:
+        print("You won, congratulations")
