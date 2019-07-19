@@ -63,8 +63,13 @@ class App(arcade.Window):
     game = {}
     offset_x = 0
     offset_y = 0
+    buttons = None
     shape_list = None
     click_text = None
+    easy_text = None
+    medium_text = None
+    hard_text = None
+    reset_text = None
 
     def __init__(self, width, height, title):
         super().__init__(width, height, title)
@@ -72,9 +77,26 @@ class App(arcade.Window):
         arcade.set_background_color((60, 60, 60))
 
         # Create a game to play
-        difficulty = get_difficulty(1)
+        difficulty = get_difficulty(3)
         bomb_set = get_bomb_set(difficulty)
         self.game = minesweeper.create_game(difficulty["board_width"], difficulty["board_height"], bomb_set)
+
+    def generate_buttons(self):
+        self.buttons = arcade.ShapeElementList()
+        x = 80
+        y = SCREEN_HEIGHT - 65
+        y_2 = SCREEN_HEIGHT - 115
+        y_3 = SCREEN_HEIGHT - 165
+        y_4 = SCREEN_HEIGHT - 215
+        color = arcade.color.LIGHT_GRAY
+        easy = arcade.create_rectangle_filled(x, y, (CELL_SIZE_PX * 4), (CELL_SIZE_PX * 1.25), color)
+        medium = arcade.create_rectangle_filled(x, y_3, (CELL_SIZE_PX * 4), (CELL_SIZE_PX * 1.25), color)
+        hard = arcade.create_rectangle_filled(x, y_4, (CELL_SIZE_PX * 4), (CELL_SIZE_PX * 1.25), color)
+        reset = arcade.create_rectangle_filled(x, y_2, (CELL_SIZE_PX * 4), (CELL_SIZE_PX * 1.25), color)
+        self.buttons.append(easy)
+        self.buttons.append(medium)
+        self.buttons.append(hard)
+        self.buttons.append(reset)
 
     def generate_shape_list(self):
         """
@@ -109,8 +131,13 @@ class App(arcade.Window):
         self.offset_x = (SCREEN_WIDTH / 2) - ((self.game["board_width"] / 2) * CELL_SIZE_PX)
         self.offset_y = (SCREEN_HEIGHT / 2) - ((self.game["board_height"] / 2) * CELL_SIZE_PX)
         # generate the shape list
+        self.generate_buttons()
         self.generate_shape_list()
         self.click_text = "No click"
+        self.easy_text = "EASY"
+        self.medium_text = "MEDIUM"
+        self.hard_text = "HARD"
+        self.reset_text = "RESET"
 
     def on_draw(self):
         """
@@ -123,8 +150,13 @@ class App(arcade.Window):
 
         # Call draw() on all your sprite lists below
         self.shape_list.draw()
+        self.buttons.draw()
 
         arcade.draw_text(self.click_text, 25, SCREEN_HEIGHT - 25, arcade.color.WHITE)
+        arcade.draw_text(self.easy_text, 65, SCREEN_HEIGHT - 120, arcade.color.BLACK)
+        arcade.draw_text(self.medium_text, 52, SCREEN_HEIGHT - 170, arcade.color.BLACK)
+        arcade.draw_text(self.hard_text, 65, SCREEN_HEIGHT - 220, arcade.color.BLACK)
+        arcade.draw_text(self.reset_text, 62, SCREEN_HEIGHT - 70, arcade.color.BLACK)
 
         # Draw all the required text
         # TODO: investigate if this performs well (we should probably use sprites instead)
@@ -173,6 +205,23 @@ class App(arcade.Window):
         # Use math.floor to truncate down to an integer
         x_click = math.floor((x - self.offset_x) / CELL_SIZE_PX)
         y_click = math.floor(((SCREEN_HEIGHT - y) - self.offset_y) / CELL_SIZE_PX)
+
+        if -5 <= x_click <= 0 <= y_click <= 1:
+            difficulty = get_difficulty(3)
+            bomb_set = get_bomb_set(difficulty)
+            self.game = minesweeper.create_game(difficulty["board_width"], difficulty["board_height"], bomb_set)
+        if -5 <= x_click <= 0 and 2 <= y_click <= 3:
+            difficulty = get_difficulty(1)
+            bomb_set = get_bomb_set(difficulty)
+            self.game = minesweeper.create_game(difficulty["board_width"], difficulty["board_height"], bomb_set)
+        if -5 <= x_click <= 0 and 4 <= y_click <= 5:
+            difficulty = get_difficulty(2)
+            bomb_set = get_bomb_set(difficulty)
+            self.game = minesweeper.create_game(difficulty["board_width"], difficulty["board_height"], bomb_set)
+        if -5 <= x_click <= 0 and 6 <= y_click <= 7:
+            difficulty = get_difficulty(3)
+            bomb_set = get_bomb_set(difficulty)
+            self.game = minesweeper.create_game(difficulty["board_width"], difficulty["board_height"], bomb_set)
 
         # Advance the game
         if is_left_click:
