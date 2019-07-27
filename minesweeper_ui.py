@@ -63,6 +63,7 @@ class App(arcade.Window):
     game = {}
     offset_x = 0
     offset_y = 0
+    difficulty = 3
     buttons = None
     shape_list = None
     click_text = None
@@ -77,7 +78,7 @@ class App(arcade.Window):
         arcade.set_background_color((60, 60, 60))
 
         # Create a game to play
-        difficulty = get_difficulty(3)
+        difficulty = get_difficulty(self.difficulty)
         bomb_set = get_bomb_set(difficulty)
         self.game = minesweeper.create_game(difficulty["board_width"], difficulty["board_height"], bomb_set)
 
@@ -111,7 +112,7 @@ class App(arcade.Window):
 
                 if cell["flagged"]:
                     color = arcade.color.RED
-                elif cell["visible"]:
+                elif cell["visible"] or (self.game["game_over"] and not self.game["is_win"]):
                     if cell["value"] == 'X':
                         color = arcade.color.BLACK
                     else:
@@ -163,7 +164,10 @@ class App(arcade.Window):
         for row in range(self.game["board_height"]):
             for col in range(self.game["board_width"]):
                 cell = self.game["board"][row][col]
-                if not cell["flagged"] and cell["visible"] and cell["value"] != '0':
+                not_flagged = not cell["flagged"]
+                not_empty = cell["value"] != '0'
+                is_visible = cell["visible"] or (self.game["game_over"] and not self.game["is_win"])
+                if not_flagged and not_empty and is_visible:
                     color = arcade.color.BLACK
                     if cell["value"] == '1':
                         color = arcade.color.BLUE
@@ -195,6 +199,15 @@ class App(arcade.Window):
         """
         pass
 
+    def reset_game(self, difficulty):
+        """
+        :return:
+        """
+        self.difficulty = difficulty
+        difficulty = get_difficulty(self.difficulty)
+        bomb_set = get_bomb_set(difficulty)
+        self.game = minesweeper.create_game(difficulty["board_width"], difficulty["board_height"], bomb_set)
+
     def on_mouse_press(self, x, y, button, key_modifiers):
         """
         Called when the user presses a mouse button
@@ -207,21 +220,13 @@ class App(arcade.Window):
         y_click = math.floor(((SCREEN_HEIGHT - y) - self.offset_y) / CELL_SIZE_PX)
 
         if -5 <= x_click <= 0 <= y_click <= 1:
-            difficulty = get_difficulty(3)
-            bomb_set = get_bomb_set(difficulty)
-            self.game = minesweeper.create_game(difficulty["board_width"], difficulty["board_height"], bomb_set)
+            self.reset_game(self.difficulty)
         if -5 <= x_click <= 0 and 2 <= y_click <= 3:
-            difficulty = get_difficulty(1)
-            bomb_set = get_bomb_set(difficulty)
-            self.game = minesweeper.create_game(difficulty["board_width"], difficulty["board_height"], bomb_set)
+            self.reset_game(1)
         if -5 <= x_click <= 0 and 4 <= y_click <= 5:
-            difficulty = get_difficulty(2)
-            bomb_set = get_bomb_set(difficulty)
-            self.game = minesweeper.create_game(difficulty["board_width"], difficulty["board_height"], bomb_set)
+            self.reset_game(2)
         if -5 <= x_click <= 0 and 6 <= y_click <= 7:
-            difficulty = get_difficulty(3)
-            bomb_set = get_bomb_set(difficulty)
-            self.game = minesweeper.create_game(difficulty["board_width"], difficulty["board_height"], bomb_set)
+            self.reset_game(3)
 
         # Advance the game
         if is_left_click:
@@ -232,7 +237,6 @@ class App(arcade.Window):
             self.game = minesweeper.get_next_game(self.game, "RIGHT_CLICK", (x_click, y_click))
         else:
             return
-
         # Update the shape list
         self.generate_shape_list()
 
