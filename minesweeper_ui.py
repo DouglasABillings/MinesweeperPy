@@ -9,6 +9,10 @@ SCREEN_HEIGHT = 600
 SCREEN_TITLE = "Minesweeper"
 
 CELL_SIZE_PX = 25
+NUM_BUTTONS = 4
+BUTTON_WIDTH = CELL_SIZE_PX * 4
+BUTTON_HEIGHT = CELL_SIZE_PX * 1.25
+BUTTON_SPACING = 50
 
 
 def get_difficulty(value):
@@ -63,7 +67,9 @@ class App(arcade.Window):
     game = {}
     offset_x = 0
     offset_y = 0
-    difficulty = 3
+    button_offset_x = 80
+    button_offset_y = SCREEN_HEIGHT - 65
+    difficulty = 1
     buttons = None
     shape_list = None
     click_text = None
@@ -84,20 +90,13 @@ class App(arcade.Window):
 
     def generate_buttons(self):
         self.buttons = arcade.ShapeElementList()
-        x = 80
-        y = SCREEN_HEIGHT - 65
-        y_2 = SCREEN_HEIGHT - 115
-        y_3 = SCREEN_HEIGHT - 165
-        y_4 = SCREEN_HEIGHT - 215
-        color = arcade.color.LIGHT_GRAY
-        easy = arcade.create_rectangle_filled(x, y, (CELL_SIZE_PX * 4), (CELL_SIZE_PX * 1.25), color)
-        medium = arcade.create_rectangle_filled(x, y_3, (CELL_SIZE_PX * 4), (CELL_SIZE_PX * 1.25), color)
-        hard = arcade.create_rectangle_filled(x, y_4, (CELL_SIZE_PX * 4), (CELL_SIZE_PX * 1.25), color)
-        reset = arcade.create_rectangle_filled(x, y_2, (CELL_SIZE_PX * 4), (CELL_SIZE_PX * 1.25), color)
-        self.buttons.append(easy)
-        self.buttons.append(medium)
-        self.buttons.append(hard)
-        self.buttons.append(reset)
+
+        x = self.button_offset_x + BUTTON_WIDTH/2
+        for i in range(NUM_BUTTONS):
+            y = self.button_offset_y - (BUTTON_SPACING * i) - BUTTON_HEIGHT/2
+            color = arcade.color.LIGHT_GRAY
+            button = arcade.create_rectangle_filled(x, y, BUTTON_WIDTH, BUTTON_HEIGHT, color)
+            self.buttons.append(button)
 
     def generate_shape_list(self):
         """
@@ -153,11 +152,14 @@ class App(arcade.Window):
         self.shape_list.draw()
         self.buttons.draw()
 
-        arcade.draw_text(self.click_text, 25, SCREEN_HEIGHT - 25, arcade.color.WHITE)
-        arcade.draw_text(self.easy_text, 65, SCREEN_HEIGHT - 120, arcade.color.BLACK)
-        arcade.draw_text(self.medium_text, 52, SCREEN_HEIGHT - 170, arcade.color.BLACK)
-        arcade.draw_text(self.hard_text, 65, SCREEN_HEIGHT - 220, arcade.color.BLACK)
-        arcade.draw_text(self.reset_text, 62, SCREEN_HEIGHT - 70, arcade.color.BLACK)
+        arcade.draw_text(self.click_text, 25, SCREEN_HEIGHT - 26, arcade.color.WHITE)
+        arcade.draw_text(self.easy_text, 115, SCREEN_HEIGHT - 138, arcade.color.BLACK)
+        arcade.draw_text(self.medium_text, 105, SCREEN_HEIGHT - 186, arcade.color.BLACK)
+        arcade.draw_text(self.hard_text, 115, SCREEN_HEIGHT - 235, arcade.color.BLACK)
+        arcade.draw_text(self.reset_text, 112, SCREEN_HEIGHT - 85, arcade.color.BLACK)
+
+        if self.game["game_over"] and not self.game["is_win"]:
+            arcade.draw_text("YOU LOSE", SCREEN_WIDTH/2 - 85, SCREEN_HEIGHT/2 - 20, arcade.color.RED, 36)
 
         # Draw all the required text
         # TODO: investigate if this performs well (we should probably use sprites instead)
@@ -215,22 +217,22 @@ class App(arcade.Window):
         is_left_click = button == 1
         is_right_click = button == 4
 
+        for i in range(NUM_BUTTONS):
+            if self.button_offset_x <= x <= self.button_offset_x + BUTTON_WIDTH:
+                button_y = self.button_offset_y - (BUTTON_SPACING * i)
+                if button_y - BUTTON_HEIGHT <= y <= button_y:
+                    if i == 0:
+                        self.reset_game(self.difficulty)
+                    else:
+                        self.reset_game(i)
+
         # Use math.floor to truncate down to an integer
         x_click = math.floor((x - self.offset_x) / CELL_SIZE_PX)
         y_click = math.floor(((SCREEN_HEIGHT - y) - self.offset_y) / CELL_SIZE_PX)
 
-        if -5 <= x_click <= 0 <= y_click <= 1:
-            self.reset_game(self.difficulty)
-        if -5 <= x_click <= 0 and 2 <= y_click <= 3:
-            self.reset_game(1)
-        if -5 <= x_click <= 0 and 4 <= y_click <= 5:
-            self.reset_game(2)
-        if -5 <= x_click <= 0 and 6 <= y_click <= 7:
-            self.reset_game(3)
-
         # Advance the game
         if is_left_click:
-            self.click_text = "left click     x: " + str(x_click) + " y: " + str(y_click)
+            self.click_text = "left click     x: " + str(x) + " y: " + str(y)
             self.game = minesweeper.get_next_game(self.game, "LEFT_CLICK", (x_click, y_click))
         elif is_right_click:
             self.click_text = "right click     x: " + str(x_click) + " y: " + str(y_click)
