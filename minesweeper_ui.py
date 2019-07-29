@@ -67,8 +67,6 @@ class App(arcade.Window):
     game = {}
     offset_x = 0
     offset_y = 0
-    button_offset_x = 80
-    button_offset_y = SCREEN_HEIGHT - 65
     difficulty = 1
     buttons = None
     shape_list = None
@@ -91,12 +89,28 @@ class App(arcade.Window):
     def generate_buttons(self):
         self.buttons = arcade.ShapeElementList()
 
-        x = self.button_offset_x + BUTTON_WIDTH/2
+        x = self.button_dict()["button_x"]
         for i in range(NUM_BUTTONS):
-            y = self.button_offset_y - (BUTTON_SPACING * i) - BUTTON_HEIGHT/2
-            color = arcade.color.LIGHT_GRAY
-            button = arcade.create_rectangle_filled(x, y, BUTTON_WIDTH, BUTTON_HEIGHT, color)
+            y = self.button_dict()["button_y"] - (BUTTON_SPACING * i)
+            button = arcade.create_rectangle_filled(x, y, BUTTON_WIDTH, BUTTON_HEIGHT, self.button_dict()["button_color"])
             self.buttons.append(button)
+
+    def button_text(self):
+        self.click_text = "No click"
+        self.easy_text = "EASY"
+        self.medium_text = "MEDIUM"
+        self.hard_text = "HARD"
+        self.reset_text = "RESET"
+
+    def button_dict(self):
+        return{
+            "button_offset_x": 20,
+            "button_offset_y": SCREEN_HEIGHT - 65,
+            "button_x": 20 + BUTTON_WIDTH/2,
+            "button_y": (SCREEN_HEIGHT - 65) - BUTTON_HEIGHT/2,
+            "button_color": arcade.color.LIGHT_GRAY,
+            "button_text": self.button_text(),
+            }
 
     def generate_shape_list(self):
         """
@@ -133,11 +147,7 @@ class App(arcade.Window):
         # generate the shape list
         self.generate_buttons()
         self.generate_shape_list()
-        self.click_text = "No click"
-        self.easy_text = "EASY"
-        self.medium_text = "MEDIUM"
-        self.hard_text = "HARD"
-        self.reset_text = "RESET"
+        self.button_text()
 
     def on_draw(self):
         """
@@ -153,10 +163,10 @@ class App(arcade.Window):
         self.buttons.draw()
 
         arcade.draw_text(self.click_text, 25, SCREEN_HEIGHT - 26, arcade.color.WHITE)
-        arcade.draw_text(self.easy_text, 115, SCREEN_HEIGHT - 138, arcade.color.BLACK)
-        arcade.draw_text(self.medium_text, 105, SCREEN_HEIGHT - 186, arcade.color.BLACK)
-        arcade.draw_text(self.hard_text, 115, SCREEN_HEIGHT - 235, arcade.color.BLACK)
-        arcade.draw_text(self.reset_text, 112, SCREEN_HEIGHT - 85, arcade.color.BLACK)
+        arcade.draw_text(self.easy_text, 55, SCREEN_HEIGHT - 138, arcade.color.BLACK)
+        arcade.draw_text(self.medium_text, 45, SCREEN_HEIGHT - 186, arcade.color.BLACK)
+        arcade.draw_text(self.hard_text, 55, SCREEN_HEIGHT - 235, arcade.color.BLACK)
+        arcade.draw_text(self.reset_text, 52, SCREEN_HEIGHT - 85, arcade.color.BLACK)
 
         if self.game["game_over"] and not self.game["is_win"]:
             arcade.draw_text("YOU LOSE", SCREEN_WIDTH/2 - 85, SCREEN_HEIGHT/2 - 20, arcade.color.RED, 36)
@@ -218,8 +228,8 @@ class App(arcade.Window):
         is_right_click = button == 4
 
         for i in range(NUM_BUTTONS):
-            if self.button_offset_x <= x <= self.button_offset_x + BUTTON_WIDTH:
-                button_y = self.button_offset_y - (BUTTON_SPACING * i)
+            if self.button_dict()["button_offset_x"] <= x <= self.button_dict()["button_offset_x"] + BUTTON_WIDTH:
+                button_y = self.button_dict()["button_offset_y"] - (BUTTON_SPACING * i)
                 if button_y - BUTTON_HEIGHT <= y <= button_y:
                     if i == 0:
                         self.reset_game(self.difficulty)
