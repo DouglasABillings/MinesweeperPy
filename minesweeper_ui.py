@@ -3,7 +3,6 @@ import random
 import arcade
 import minesweeper
 
-
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 SCREEN_TITLE = "Minesweeper"
@@ -51,8 +50,8 @@ def get_bomb_set(difficulty):
     counter = 1
     total_bombs = set()
     while counter in range(1, difficulty["num_bombs"] + 1):
-        bomb_x = random.randint(0, difficulty["board_width"]-1)
-        bomb_y = random.randint(0, difficulty["board_height"]-1)
+        bomb_x = random.randint(0, difficulty["board_width"] - 1)
+        bomb_y = random.randint(0, difficulty["board_height"] - 1)
         bombs = (bomb_x, bomb_y)
         total_bombs.add(bombs)
         counter += 1
@@ -67,40 +66,83 @@ def get_ui_data(game):
     :param game: The game we need to generate the UI data for
     :return: A data structure that contains declarative UI data for the game
     """
-
-    return {
-        # TODO: store all the colors the UI needs in a dictionary in here
+    result = {
         "buttons": [{
             "x": BUTTONS_X_OFFSET,
             "y": BUTTONS_Y_OFFSET - BUTTON_SPACING * 0,
             "width": BUTTON_WIDTH,
             "height": BUTTON_HEIGHT,
-            "color": arcade.color.LIGHT_GRAY,
             "text": "RESET",
         }, {
             "x": BUTTONS_X_OFFSET,
             "y": BUTTONS_Y_OFFSET - BUTTON_SPACING * 1,
             "width": BUTTON_WIDTH,
             "height": BUTTON_HEIGHT,
-            "color": arcade.color.LIGHT_GRAY,
             "text": "EASY",
         }, {
             "x": BUTTONS_X_OFFSET,
             "y": BUTTONS_Y_OFFSET - BUTTON_SPACING * 2,
             "width": BUTTON_WIDTH,
             "height": BUTTON_HEIGHT,
-            "color": arcade.color.LIGHT_GRAY,
             "text": "MEDIUM",
         }, {
             "x": BUTTONS_X_OFFSET,
             "y": BUTTONS_Y_OFFSET - BUTTON_SPACING * 3,
             "width": BUTTON_WIDTH,
             "height": BUTTON_HEIGHT,
-            "color": arcade.color.LIGHT_GRAY,
             "text": "HARD",
-        }]
-        # TODO: We could also consider representing the game board as data in here
+        }],
+        "colors": {
+            "background": arcade.set_background_color((60, 60, 60)),
+            "border": arcade.color.BLACK,
+            "text": arcade.color.BLACK,
+            "default": arcade.color.LIGHT_GRAY,
+            "button_color": arcade.color.LIGHT_GRAY,
+            "flag": arcade.color.RED,
+            "bomb": arcade.color.BLACK,
+            "empty": arcade.color.DARK_GRAY,
+            "click": arcade.color.YELLOW,
+            "over": arcade.color.RED,
+            "one": arcade.color.BLUE,
+            "two": arcade.color.DARK_GREEN,
+            "three": arcade.color.RED,
+            "four": arcade.color.PURPLE,
+            "five": arcade.color.MAROON,
+            "six": arcade.color.TURQUOISE,
+            "seven": arcade.color.BLACK,
+            "eight": arcade.color.GRAY
+        },
+        "board": {
+            "x": (SCREEN_WIDTH / 2) - ((game["board_width"] / 2) * CELL_SIZE_PX),
+            "y": (SCREEN_HEIGHT / 2) - ((game["board_height"] / 2) * CELL_SIZE_PX),
+            "cells": []
+        }
     }
+    for y in range(game["board_height"]):
+        row = []
+        for x in range(game["board_width"]):
+            colors = result["colors"]
+            color = None
+            cell = game["board"][y][x]
+            if cell["flagged"]:
+                color = colors["flag"]
+            elif cell["visible"] or (game["game_over"] and not game["is_win"]):
+                if cell["value"] == 'X':
+                    color = colors["bomb"]
+                else:
+                    color = colors["empty"]
+            else:
+                color = colors["default"]
+            row.append({
+                "x": result["board"]["x"] + (x * CELL_SIZE_PX) + (CELL_SIZE_PX / 2),
+                "y": SCREEN_HEIGHT - (y * CELL_SIZE_PX) - (CELL_SIZE_PX / 2) - result["board"]["y"],
+                "height": CELL_SIZE_PX,
+                "width": CELL_SIZE_PX,
+                "color": color
+            })
+        result["board"]["cells"].append(row)
+
+    return result
 
 
 class App(arcade.Window):
@@ -132,9 +174,7 @@ class App(arcade.Window):
         difficulty = get_difficulty(self.difficulty)
         bomb_set = get_bomb_set(difficulty)
         self.game = minesweeper.create_game(difficulty["board_width"], difficulty["board_height"], bomb_set)
-        self.ui_data = get_ui_data(self.game)
 
-        # TODO: we should have all of the colors in ui_data
         arcade.set_background_color((60, 60, 60))
 
     def generate_button_shape_list(self):
@@ -147,7 +187,7 @@ class App(arcade.Window):
                 button["y"] - (button["height"] / 2),
                 button["width"],
                 button["height"],
-                button["color"]
+                self.ui_data["colors"]["button_color"]
             )
             self.button_shape_list.append(button)
 
@@ -155,25 +195,24 @@ class App(arcade.Window):
         """
         Regenerate the shape list based on the current state of the game
         """
+        cells = self.ui_data["board"]["cells"]
         self.board_shape_list = arcade.ShapeElementList()
-        for row in range(self.game["board_height"]):
-            for col in range(self.game["board_width"]):
-                cell = self.game["board"][row][col]
-                x_px = self.offset_x + (col * CELL_SIZE_PX) + (CELL_SIZE_PX / 2)
-                y_px = SCREEN_HEIGHT - (row * CELL_SIZE_PX) - (CELL_SIZE_PX / 2) - self.offset_y
-
-                if cell["flagged"]:
-                    color = arcade.color.RED
-                elif cell["visible"] or (self.game["game_over"] and not self.game["is_win"]):
-                    if cell["value"] == 'X':
-                        color = arcade.color.BLACK
-                    else:
-                        color = arcade.color.DARK_GRAY
-                else:
-                    color = arcade.color.LIGHT_GRAY
-
-                rect = arcade.create_rectangle_filled(x_px, y_px, CELL_SIZE_PX, CELL_SIZE_PX, color)
-                border = arcade.create_rectangle_outline(x_px, y_px, CELL_SIZE_PX, CELL_SIZE_PX, arcade.color.BLACK)
+        for row in cells:
+            for cell in row:
+                rect = arcade.create_rectangle_filled(
+                    cell["x"],
+                    cell["y"],
+                    cell["width"],
+                    cell["height"],
+                    cell["color"]
+                )
+                border = arcade.create_rectangle_outline(
+                    cell["x"],
+                    cell["y"],
+                    cell["width"],
+                    cell["height"],
+                    self.ui_data["colors"]["border"]
+                )
                 self.board_shape_list.append(rect)
                 self.board_shape_list.append(border)
 
@@ -196,6 +235,7 @@ class App(arcade.Window):
         difficulty = get_difficulty(self.difficulty)
         bomb_set = get_bomb_set(difficulty)
         self.game = minesweeper.create_game(difficulty["board_width"], difficulty["board_height"], bomb_set)
+        self.ui_data = get_ui_data(self.game)
 
         # The top left corner of the board needs to be adjusted
         self.offset_x = (SCREEN_WIDTH / 2) - ((self.game["board_width"] / 2) * CELL_SIZE_PX)
@@ -213,8 +253,9 @@ class App(arcade.Window):
         # Call draw() on all your sprite lists below
         self.board_shape_list.draw()
         self.button_shape_list.draw()
+        colors = self.ui_data["colors"]
 
-        arcade.draw_text(self.click_text, 20, 20, arcade.color.YELLOW)
+        arcade.draw_text(self.click_text, 20, 20, colors["click"])
 
         for button in self.ui_data["buttons"]:
             # NOTE: this takes the x,y as the center, but we are storing the top left location
@@ -224,14 +265,18 @@ class App(arcade.Window):
                 button["text"],
                 button["x"] + (button["width"] / 2) + x_fudge,
                 button["y"] - (button["height"] / 2 + y_fudge),
-                arcade.color.BLACK
+                colors["text"]
             )
 
-        # TODO: detect the win condition also
         if self.game["game_over"] and not self.game["is_win"]:
             x_fudge = -85
             y_fudge = -20
-            arcade.draw_text("YOU LOSE", SCREEN_WIDTH / 2 + x_fudge, SCREEN_HEIGHT / 2 + y_fudge, arcade.color.RED, 36)
+            arcade.draw_text("YOU LOSE", SCREEN_WIDTH / 2 + x_fudge, SCREEN_HEIGHT / 2 + y_fudge, colors["over"], 36)
+
+        if self.game["game_over"] and self.game["is_win"]:
+            x_fudge = -85
+            y_fudge = -20
+            arcade.draw_text("YOU WON", SCREEN_WIDTH / 2 + x_fudge, SCREEN_HEIGHT / 2 + y_fudge, colors["over"], 36)
 
         # Draw text for all the cells
         # TODO: investigate if this performs well (we should probably use sprites instead)
@@ -242,23 +287,23 @@ class App(arcade.Window):
                 not_empty = cell["value"] != '0'
                 is_visible = cell["visible"] or (self.game["game_over"] and not self.game["is_win"])
                 if not_flagged and not_empty and is_visible:
-                    color = arcade.color.BLACK
+                    color = colors["bomb"]
                     if cell["value"] == '1':
-                        color = arcade.color.BLUE
+                        color = colors["one"]
                     elif cell["value"] == '2':
-                        color = arcade.color.DARK_GREEN
+                        color = colors["two"]
                     elif cell["value"] == '3':
-                        color = arcade.color.DARK_RED
+                        color = colors["three"]
                     elif cell["value"] == '4':
-                        color = arcade.color.PURPLE
+                        color = colors["four"]
                     elif cell["value"] == '5':
-                        color = arcade.color.MAROON
+                        color = colors["five"]
                     elif cell["value"] == '6':
-                        color = arcade.color.TURQUOISE
+                        color = colors["six"]
                     elif cell["value"] == '7':
-                        color = arcade.color.BLACK
+                        color = colors["seven"]
                     elif cell["value"] == '8':
-                        color = arcade.color.GRAY
+                        color = colors["eight"]
 
                     num_offset = 7
                     x_px = self.offset_x + (col * CELL_SIZE_PX) + num_offset
@@ -307,6 +352,7 @@ class App(arcade.Window):
             return
 
         # Update the shape list
+        self.ui_data = get_ui_data(self.game)
         self.generate_shape_list()
 
 
